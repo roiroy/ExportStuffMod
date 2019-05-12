@@ -64,4 +64,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(OutDir)\ExportStuffMod.dll "C:\Program Files (x86)\Steam\steamapps\common\RiseOfIndustry\Mods\ExportStuff\code"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

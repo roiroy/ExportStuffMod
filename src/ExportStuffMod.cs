@@ -37,6 +37,8 @@ namespace ExportStuffMod
     public class ExportedProducer
     {
         public string name;
+        public float cost;
+        public float? harvesterCost;
         public List<String> recipes;
     }
 
@@ -64,12 +66,13 @@ namespace ExportStuffMod
                 producers = GameData.instance.GetAssets<Building>().Select(building => new ExportedProducer
                 {
                     name = building.name,
+                    cost = building.baseCost,
+                    harvesterCost = building.ExportHarvesterCost(),
                     recipes = building.ExportRecipes(),
-                }).Where(b => b.recipes.Count > 0).ToList(),
+                }).Where(b => b.recipes != null && b.recipes.Count > 0).ToList(),
             };
             string json = JsonConvert.SerializeObject(exports, Formatting.Indented);
             Debug.Log(json);
-            //File.WriteAllText("D:\\Project\\roi-tools\\calc\\exports.json", json);
         }
     }
 
@@ -87,13 +90,41 @@ namespace ExportStuffMod
 
         public static List<String> ExportRecipes(this Building building)
         {
-            RecipeUser[] users = building.GetComponents<RecipeUser>();
-            return users.Length > 0 ? Recipes(users[0]) : new List<string>();
+            return building.recipeUser?.availableRecipes?.Select(recipe => recipe.name)?.ToList();
         }
 
-        private static List<String> Recipes(RecipeUser user)
+        // I couldn't get that information from game data, should certainly be there
+        private static readonly Dictionary<string, string> HARVESTERS = new Dictionary<string, string>
         {
-            return user.availableRecipes?.Select(recipe => recipe.name)?.ToList();
+            { "CoalGatherer", "CoalMineHarvester" },
+            { "CopperGatherer", "CopperMineHarvester" },
+            { "CropFarm", "WheatField" },
+            { "FishingGatherer", "FishNetHarvester" },
+            { "GasGatherer", "GasPumpHarvester" },
+            { "IronGatherer", "IronMineHarvester" },
+            { "LivestockFarm", "ChickenField" },
+            { "LumberyardGatherer", "LumberyardHarvester" },
+            { "OilSeaGatherer", "OilSeaHarvester" },
+            { "OilGatherer", "OilDrillHarvester" },
+            { "OrchardFarm", "ApplesField" },
+            { "PlantationFarm", "BerryField" },
+            { "SandGatherer", "SandHarvester" },
+            { "WaterGatherer", "WaterHarvester" },
+            { "WaterWell", "WaterWellHarvester" },
+        };
+
+        public static float? ExportHarvesterCost(this Building building)
+        {
+            var hub = building.GetComponent<GathererHub>();
+            if (hub != null)
+            {
+                var harvesterName = HARVESTERS[hub.name];
+                return GameData.instance.GetAssets<Building>()
+                    .Where(b => b.harvester != null && b.name == harvesterName)
+                    .FirstOrDefault()
+                    ?.baseCost;
+            }
+            return null;
         }
     }
 }
